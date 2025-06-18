@@ -1,11 +1,17 @@
 import { User } from "../interface";
 import { usersmodel } from "../models/users_model";
+const bcrypt = require("bcrypt");
 
 class UsersService {
-    async loginUser(username: string) {
-        return await usersmodel.findByUserName(username);
-    }
+    async loginUser(username: string, password: string) {
+    const user = await usersmodel.findUserByUsername(username);
+    if (!user) throw "Username is incorrect";
 
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) throw "Password is incorrect";
+
+    return user;
+  }
     async getAllUsers() {
         return await usersmodel.getAllUsers();
     }

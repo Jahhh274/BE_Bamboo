@@ -58,16 +58,14 @@ class UsersModel {
         return users;
     }
 
-    async findByUserName(username: string) {
-        if (!username) {
-            throw new Error("Username must be provided.");
-        }
-
-        const query = `SELECT * FROM users WHERE username = ? LIMIT 1`;
-        const [rows]: any = await dataBase.execute(query, [username]);
-
-        return rows.length > 0 ? rows[0] : null;
-    }
+   async findUserByUsername(username: string): Promise<User | null> {
+    const [users] = await dataBase.query<User[] & RowDataPacket[]>(
+      "SELECT * FROM users WHERE username = ?",
+      [username]
+    );
+    if (users.length === 0) return null;
+    return users[0];
+  }
 }
 
 export const usersmodel = new UsersModel();
