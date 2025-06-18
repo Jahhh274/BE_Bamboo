@@ -3,35 +3,54 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { usersservice } from "../services/users_service";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
 
 class usersController {
-    async loginUser(req: Request, res: Response): Promise<void> {
-        try {
-            const { username, password } = req.body;
-            const user = await usersservice.loginUser(username);
-            if (!user) {
-                res.status(401).json({ message: 'Invalid username or password' });
-                return
-            }
+   async loginUser(req: Request, res: Response) {
+    try {
+      const user = await usersservice.loginUser(
+        req.body.username,
+        req.body.password
+      );
 
-            const validPassword = await bcrypt.compare(password, user.password);
-            if (!validPassword) {
-                res.status(401).json({ message: 'Invalid username or password' });
-                return
-            }
+      if (!user) {
+        return res.status(404).json({ message: "Wrong username!" });
+      }
 
-            const token = jwt.sign(
-                { id: user.id, username: user.username },
-                JWT_SECRET,
-                { expiresIn: '30d' }
-            );
+      const validPassword = await bcrypt.compare(
+        req.body.password,
+        user.password
+      );
 
-            res.json({ message: 'Login successful', token, user });
-        } catch {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+      if (!validPassword) {
+        return res.status(404).json({ message: "Wrong password!" });
+      }
+
+      const accessToken = jwt.sign(
+        {
+          id: user.id,
+          role: user.role,
+        },
+        process.env.JWT_ACCESS_TOKEN || "your_jwt_secret",
+        { expiresIn: "30d" }
+      );
+
+      const { password, ...others } = user;
+      return res.status(200).json({ ...others, accessToken });
+      
+    } catch (err) {
+      return res.status(500).json({ message: "Internal Server Error", error: err });
+     
+      
     }
+  }
 
     async getAllUsers(req: Request, res: Response) {
         try {
@@ -46,7 +65,7 @@ class usersController {
         try {
             const { username, password, email, full_name, phone, address, role } = req.body;
 
-            const existingUser = await usersservice.loginUser(username);
+            const existingUser = await usersservice.loginUser(username, password);
             if (existingUser) {
                 res.status(400).json({ message: 'Username already exists' });
                 return
