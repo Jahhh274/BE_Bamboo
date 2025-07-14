@@ -13,6 +13,7 @@ import paymentrouter from "./apps/routers/payment_router";
 import orderdetailrouter from "./apps/routers/order_details_router";
 import reviewrouter from "./apps/routers/reviews_router";
 import orderrouter from "./apps/routers/orders_router";
+import cartRoute from "./apps/routers/carts_router";
 
 dotenv.config();
 const cors = require("cors");
@@ -42,6 +43,7 @@ app.use("/api", reviewrouter);
 app.use("/api", paymentrouter);
 app.use("/api", orderdetailrouter);
 app.use("/api", orderrouter);
+app.use("/api", cartRoute);
 
 
 app.get("/", (req: Request, res: Response) => {

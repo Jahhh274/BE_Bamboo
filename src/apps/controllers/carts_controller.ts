@@ -41,13 +41,21 @@ class CartsController {
     // Thêm sản phẩm vào giỏ hàng
     async addToCart(req: Request, res: Response) {
         try {
-            const { user_id, product_id, quantity } = req.body;
-            const cartItemId = await cartService.addToCart(user_id, product_id, quantity);
+            const user_id = req.user?.id;
+            const { product_id, price, quantity } = req.body;
+
+            if (!user_id || !product_id || !price || !quantity) {
+                return res.status(400).json({ message: "Missing required fields" });
+            }
+
+            const cartItemId = await cartService.addToCart(user_id, product_id, price, quantity);
             res.status(201).json({ message: "Added to cart", cartItemId });
         } catch (error: any) {
+
             res.status(400).json({ message: error.message });
         }
     }
+
 
     // Cập nhật số lượng sản phẩm trong giỏ hàng
     async updateCartItemQuantity(req: Request, res: Response) {

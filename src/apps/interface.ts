@@ -81,13 +81,15 @@ export interface Payment {
 }
 
 export interface OrderDetail {
-    id: number,
-    user_id: number,
-    product_id: number,
-    quantity: number,
-    price: number,
-    total_price: number,
-    payment_id: number,
+  id: number;
+  user_id: number;
+  quantity: number;
+  price: number;
+  total_price: number;
+  receiver_name: string;
+  receiver_phone: string;
+  receiver_address: string;
+  note: string;
 }
 
 export interface Order {
@@ -103,7 +105,7 @@ export interface Cart {
     id: number,
     user_id: number,
     product_id: number,
-    price: number,
+    price: string,
     quantity: number,
     created_at: Date,
 } 
