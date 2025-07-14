@@ -22,31 +22,85 @@ class CartModel {
     }
 
     // Thêm sản phẩm vào giỏ hàng
-    async addToCart(user_id: number, product_id: number, quantity: number, totalPrice: number) {
-        // Kiểm tra giỏ hàng đã tồn tại chưa
-        const [cartRows] = await dataBase.query<RowDataPacket[]>(
-            `SELECT id FROM carts WHERE user_id = ?`,
-            [user_id]
-        );
-        
-        let cart_id;
-        if (cartRows.length === 0) {
-            const [newCart] = await dataBase.query<ResultSetHeader>(
-                `INSERT INTO carts (user_id, created_at, updated_at) VALUES (?, NOW(), NOW())`,
-                [user_id]
-            );
-            cart_id = newCart.insertId;
-        } else {
-            cart_id = cartRows[0].id;
-        }
+    // async addToCart(user_id: number, product_id: number, quantity: number, totalPrice: number) {
+    //     // Kiểm tra giỏ hàng đã tồn tại chưa
+    //     const [cartRows] = await dataBase.query<RowDataPacket[]>(
+    //         `SELECT id FROM carts WHERE user_id = ?`,
+    //         [user_id]
+    //     );
 
-        // Thêm sản phẩm vào bảng product_cart
-        const [result] = await dataBase.query<ResultSetHeader>(
-            `INSERT INTO carts (user_id, product_id, cart_id, quantity, price) VALUES (?, ?, ?, ?, ?)`,
-            [user_id, product_id, cart_id, quantity, totalPrice]
-        );
-        return result.insertId;
+    //     let cart_id;
+    //     if (cartRows.length === 0) {
+    //         const [newCart] = await dataBase.query<ResultSetHeader>(
+    //             `INSERT INTO carts (user_id, created_at, updated_at) VALUES (?, NOW(), NOW())`,
+    //             [user_id]
+    //         );
+    //         cart_id = newCart.insertId;
+    //     } else {
+    //         cart_id = cartRows[0].id;
+    //     }
+
+    //     // Thêm sản phẩm vào bảng product_cart
+    //     const [result] = await dataBase.query<ResultSetHeader>(
+    //         `INSERT INTO carts (user_id, product_id, cart_id, quantity, price) VALUES (?, ?, ?, ?, ?)`,
+    //         [user_id, product_id, cart_id, quantity, totalPrice]
+    //     );
+    //     return result.insertId;
+    // }
+//     async addToCart(user_id: number, product_id: number, price: number, quantity: number) {
+//         const parsedPrice = Number(price);
+//         const parsedQuantity = Number(quantity);
+
+//         if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
+//             throw new Error("Price or quantity is not a valid number");
+
+//         }
+
+//         const [result] = await dataBase.query<ResultSetHeader>(
+//             `INSERT INTO carts (user_id, product_id, price, quantity, created_at) 
+//    VALUES (?, ?, ?, ?, NOW())`,
+//             [user_id, product_id, parsedPrice, parsedQuantity]
+//         );
+//         return result.insertId;
+//     }
+
+
+async addToCart(user_id: number, product_id: number, price: number, quantity: number) {
+    const parsedPrice = Number(price);
+    const parsedQuantity = Number(quantity);
+
+    if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
+        throw new Error("Price or quantity is not a valid number");
     }
+
+    // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng chưa
+    const [existingRows] = await dataBase.query<RowDataPacket[]>(
+        `SELECT id, quantity, price FROM carts WHERE user_id = ? AND product_id = ?`,
+        [user_id, product_id]
+    );
+
+    if (existingRows.length > 0) {
+        // Nếu đã có -> cập nhật số lượng và giá
+        const existing = existingRows[0];
+        const newQuantity = existing.quantity + parsedQuantity;
+        const newPrice = parsedPrice * newQuantity; // hoặc giữ nguyên đơn giá
+
+        const [updateResult] = await dataBase.query<ResultSetHeader>(
+            `UPDATE carts SET quantity = ?, price = ? WHERE id = ?`,
+            [newQuantity, newPrice, existing.id]
+        );
+        return existing.id;
+    } else {
+        // Nếu chưa có -> thêm mới
+        const [insertResult] = await dataBase.query<ResultSetHeader>(
+            `INSERT INTO carts (user_id, product_id, price, quantity, created_at) 
+             VALUES (?, ?, ?, ?, NOW())`,
+            [user_id, product_id, parsedPrice * parsedQuantity, parsedQuantity]
+        );
+        return insertResult.insertId;
+    }
+}
+
 
     // Cập nhật số lượng sản phẩm trong giỏ hàng
     async updateCartItemQuantity(user_id: number, product_id: number, quantity: number, totalPrice: number) {
@@ -97,7 +151,7 @@ class CartModel {
     async getCartByUserId(user_id: number) {
         const [cartItems] = await dataBase.query<Cart[] & RowDataPacket[]>(
             "SELECT pc.*, p.name as product_name, p.image_url as product_image FROM carts pc " +
-            "JOIN product p ON pc.product_id = p.id " +
+            "JOIN products p ON pc.product_id = p.id " +
             "WHERE pc.user_id = ?",
             [user_id]
         );

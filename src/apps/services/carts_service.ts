@@ -18,15 +18,10 @@ class CartService {
     }
 
     // Thêm sản phẩm vào giỏ hàng
-    async addToCart(user_id: number, product_id: number, quantity: number): Promise<number> {
-        // Lấy thông tin sản phẩm
-        const product = await cartModel.getProductById(product_id);
-        if (!product) throw new Error('Product not found');
-        if (product.stock < quantity) throw new Error('Not enough stock');
+    async addToCart(user_id: number, product_id: number, price: number, quantity: number): Promise<number> {
+  return await cartModel.addToCart(user_id, product_id, price, quantity);
+}
 
-        const totalPrice = product.price * quantity;
-        return await cartModel.addToCart(user_id, product_id, quantity, totalPrice);
-    }
 
     // Cập nhật số lượng sản phẩm trong giỏ hàng
     async updateCartItemQuantity(user_id: number, product_id: number, quantity: number): Promise<number> {
